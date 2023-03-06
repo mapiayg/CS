@@ -41,9 +41,13 @@ def SetFlags(A, B, res, c = 'x', v = 'x'):
     elif v != '-':    
             Flags['V'] = v
 
+def ResetFlags():
+    for i in Flags:
+        Flags[i] = '0'
+    
 def PrintFlags():
     for i in Flags:
-        print(i + '=' + Flags[i],end = ' ')
+        print(i + '=' + Flags[i], end = ' ')
     print('')
     print('')
 
@@ -264,10 +268,10 @@ def JL32():
     return Flags['S'] != Flags['V']
 
 def JLE32():
-    return Flags['Z'] == '1' or Flags['S'] != Flags['V']
+    return Flags['S'] != Flags['V'] or Flags['Z'] == '1'
 
 def JG32():
-    return Flags['Z'] == '0' and Flags['S'] == Flags['V']
+    return Flags['S'] == Flags['V'] and Flags['Z'] == '0'
 
 def JGE32():
     return Flags['S'] == Flags['V']
@@ -440,5 +444,73 @@ def CAA1():
     Reset()
     Q3()
  
-CAA1()
-#Print32(SUB32(Hex8ToBin32('00CC3324'),Hex8ToBin32('00CC331D')))
+#CAA1()
+#Print32(ADD32(Hex8ToBin32('77665544'),Hex8ToBin32('22446688')))
+
+R = [0] * 16
+def ResetRexam():
+    global R
+    for i in range(16):
+        R[i] = DecToBin32(8 * i)
+def Mexam(i):
+    return DecToBin32(16 + i)
+ResetRexam()
+ResetFlags()
+A = '00000400'
+B = '00000800'
+MA = Mexam(Hex8ToDec(A))
+MB = Mexam(Hex8ToDec(B))
+MAplus100 = Mexam(Hex8ToDec(A) + Hex8ToDec('00000100'))
+R[1] = MOV32(R[1], MAplus100)
+PrintReg('R1', R[1])
+R[1] = XOR32(R[1], Hex8ToBin32('00000010'))
+PrintReg('R1', R[1])
+R[1] = SUB32(R[1], MB)
+PrintReg('R1', R[1])
+MA = MOV32(MA, Hex8ToBin32('00000010'))
+
+ResetFlags()
+R[1] = MOV32(R[1], DecToBin32(1))
+PrintReg('R1', R[1])
+R[2] = MOV32(R[2], DecToBin32(3))
+PrintReg('R2', R[2])
+R[1] = SAR32(R[1], Bin32ToDec(R[2]))
+PrintReg('R1', R[1])
+if not JE32():
+    R[1] = MOV32(R[1], Hex8ToBin32('FFFFFFFF'))
+    PrintReg('R1', R[1])
+    
+print()
+print("exam")
+ResetFlags()
+R0 = '00000400'
+R1 = '00000300'
+R2 = '00000200'
+R3 = '00000100'
+R4 = '00000500'
+M100 = 'FFFF0000'
+M200 = '0000FFFF'
+M300 = '11110000'
+M400 = '00001111'
+M500 = 'F000000F'
+A = M500
+
+print("a")
+R0 = SUB32(Hex8ToBin32(R0), Hex8ToBin32(R1))
+PrintReg('R0', R0)
+R2 = MOV32(R2, Hex8ToBin32(M100))
+PrintReg('R2', R2)
+R2 = XOR32(R2, Hex8ToBin32(A))
+PrintReg('R2', R2)
+print("b")
+R1 = '00000300'
+R2 = '00000200'
+R2 = NEG32(Hex8ToBin32(R2))
+PrintReg('R2', R2)
+R2 = ADD32(R2, Hex8ToBin32(M300))
+PrintReg('R2', R2)
+R1 = MOV32(R1, Hex8ToBin32(A))
+PrintReg('R1', R1)
+
+Print32(DecToBin32(Hex8ToDec('00000DDE')+3))
+Print32(DecToBin32(-19))
