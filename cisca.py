@@ -131,7 +131,7 @@ def CarBit(a, b, c):
     else:
         return '0'
 
-def MOV32(A, B):
+def MOV32(B):
     return B
 
 def ADD32(A, B, Sub = False, NoFlags = False):
@@ -146,7 +146,7 @@ def ADD32(A, B, Sub = False, NoFlags = False):
             Cout = CarBit(A[i], B[i], Cin)
         res[i] = AddBit(A[i], B[i], Cin)
     res = ''.join(res)
-    if Sub:
+    if Sub and Bin32ToDec(B) != 0:
         if Cout == '0':
             Cout = '1'
         else:
@@ -276,29 +276,36 @@ def JG32():
 def JGE32():
     return Flags['S'] == Flags['V']
     
-def Reset():
-    global R0
-    R0 = Hex8ToBin32('00000000')
-    global R1 
-    R1 = Hex8ToBin32('00100100')
-    global R2
-    R2 = Hex8ToBin32('00200200')
-    global R3
-    R3 = Hex8ToBin32('00100001')
-    global R4 
-    R4 = Hex8ToBin32('00200002')
-    global M0 
-    M0 = Hex8ToBin32('00001111')
-    global M1 
-    M1 = Hex8ToBin32('FFFF0000')
-    global M2 
-    M2 = Hex8ToBin32('11110000')
-    global M3 
-    M3 = Hex8ToBin32('FFFF0000')
-    global M4
-    M4 = Hex8ToBin32('F000000F')
-    global A
-    A = Hex8ToBin32('00200200')
+
+A = '00100001'
+B = '00200002'
+
+R = {
+    '0':'00000000',
+    '1':'FFFFFFFF',
+    '2':'08000080',
+    '3':'10000001',
+    '4':'EFFFFFFE'
+}
+
+M = {
+    R['0']:'00000000',
+    R['3']:'00001111',
+    R['4']:'11110000',
+    A:'FFFFF000',
+    B:'F000000F'
+}
+
+R0 = Hex8ToBin32(R['0'])
+R1 = Hex8ToBin32(R['1'])
+R2 = Hex8ToBin32(R['2'])
+R3 = Hex8ToBin32(R['3'])
+R4 = Hex8ToBin32(R['4'])
+M0 = Hex8ToBin32(M[R['0']])
+M3 = Hex8ToBin32(M[R['3']])
+M4 = Hex8ToBin32(M[R['4']])
+MA = Hex8ToBin32(M[A])
+MB = Hex8ToBin32(M[B])
 
 def Q(desc):
     print('')
@@ -307,210 +314,159 @@ def Q(desc):
     print('---')
     print('')
 
+def PrintM():
+    print('NOMENCLATURA:')
+    print('------------')
+    print('M0 = M(' + R['0'] + 'h)')
+    print('M3 = M(' + R['3'] + 'h)')
+    print('M4 = M(' + R['4'] + 'h)')
+    print('MA = M(' + A + 'h)')
+    print('MB = M(' + B + 'h)')
+    print('')
+
 def PrintQTT():
-    print('TRACE TABLE:')
-    print('-----------')
+    print('EJECUCIÓN:')
+    print('---------')
     print('')
 
 def PrintQMC():
-    print('MODIFIED CONTENT:')
-    print('----------------')
+    print('MODIFICACIÓN:')
+    print('------------')
     print('')
 
 def PrintQF():
     print('')
-    print('FLAGS:')
-    print('-----')
+    print('BITS DE ESTADO:')
+    print('--------------')
     print('')
 
-def Q1():
+def CAT1Q1():
     PrintQTT()
-
-    R0n = R0
-    M4n = M4
     
-    R0n = MOV32(R0n, M4n)
+    R0n = AND32(R0, R2)
     PrintReg('R0:',R0n)
 
-    R0n = SAL32(R0n, Hex8ToDec('00000004'))
+    M0n = NOT32(M0)
+    PrintReg('M0:',M0n)
+
+    R0n = MOV32(MA)
+    PrintReg('R0:',R0n)
+    
+    R0n = SAR32(R0n, Hex8ToDec('00000010'))
     PrintReg('R0:',R0n)
 
-    R0n = SUB32(R0n, M0)
-    PrintReg('R0:',R0n)
-
-    R0n = NOT32(R0n)
+    R0n = SUB32(R0n, M4)
     PrintReg('R0:',R0n)
 
     PrintQMC()
     
     if R0n != R0:
         PrintReg('R0:',R0n, True)
-    if M4n != M4:
-        PrintReg('M4:',M4n, True)
+    if M0n != M0:
+        PrintReg('M0:',M0n, True)
 
     PrintQF()
 
     PrintFlags()
 
-def Q2():
+def CAT1Q2():
     PrintQTT()
 
-    R0n = R0
-    R1n = R1
-    R2n = R2
-    R3n = R3
-    An = A
-
-    CMP32(R2n, R1n)
+    CMP32(R2, R1)
     PrintFlags()
     PrintJumps()
 
-    if JL32():
-        R0n = MOV32(R0n, An)
+    R0n = R0
+
+    if not JL32():
+        R0n = MOV32(MA)
         PrintReg('R0:',R0n)
 
-    R3n = SUB32(R3n, R2n)
+    R3n = ADD32(R3, R0n)
     PrintReg('R3:',R3n)
 
     PrintQMC()    
     
     if R0n != R0:
         PrintReg('R0:',R0n, True)
-    if R1n != R1:
-        PrintReg('R1:',R1n, True)
-    if R2n != R2:
-        PrintReg('R2:',R2n, True)
     if R3n != R3:
         PrintReg('R3:',R3n, True)
-    if An != A:
-        PrintReg('A:',An, True)
 
     PrintQF()    
     
     PrintFlags()
 
-def Q3():
+def CAT1Q3():
     PrintQTT()
     
-    R0n = R0
     R1n = R1
     R2n = R2
-    M0n = M0
+    R3n = R3
     
-    R1n = MOV32(R1n, Hex8ToBin32('00100100'))
+    R1n = MOV32(Hex8ToBin32('00000004'))
     PrintReg('R1:',R1n)
     
-    R2n = MOV32(R2n, DecToBin32(0))
+    R2n = MOV32(DecToBin32(0))
     PrintReg('R2:',R2n)
     
-    CMP32(R0n, Hex8ToBin32('00300300'))
+    CMP32(R1n, Hex8ToBin32('00000000'))
     PrintFlags()
     PrintJumps()
 
+    M3n = M3
+
     while not JE32():
-        R2n = ADD32(R2n, M0n)
+        R2n = ADD32(R2n, M3n)
         PrintReg('R2:',R2n)
+        
+        R3n = NOT32(R3n)
+        PrintReg('R3:',R3n)
+        
+        R['3'] = Bin32ToHex8(R3n)
+        M3n = Hex8ToBin32(M[R['3']])
 
-        R0n = ADD32(R0n, R1n)
-        PrintReg('R0:',R0n)
-
-        CMP32(R0n, Hex8ToBin32('00300300'))
+        R1n = DEC32(R1n)
+        PrintReg('R1:',R1n)
+        
+        CMP32(R1n, Hex8ToBin32('00000000'))
         PrintFlags()
         PrintJumps()
 
+    R2n = NOT32(R2n)
+    PrintReg('R2:',R2n)
+
     PrintQMC()    
     
-    if R0n != R0:
-        PrintReg('R0:',R0n, True)
     if R1n != R1:
         PrintReg('R1:',R1n, True)
     if R2n != R2:
         PrintReg('R2:',R2n, True)
-    if M0n != M0:
-        PrintReg('M0:',M0n, True)
+    if R3n != R3:
+        PrintReg('R3:',R0n, True)
 
     PrintQF()
     
     PrintFlags()
 
-def CAA1():
+def CAT1():
     Q("Q1a")
-    Reset()
-    Q1()
-    Q("Q1b")
-    Reset()
-    Q2()
-    Q("Q1c")
-    Reset()
-    Q3()
- 
-#CAA1()
-#Print32(ADD32(Hex8ToBin32('77665544'),Hex8ToBin32('22446688')))
-
-R = [0] * 16
-def ResetRexam():
-    global R
-    for i in range(16):
-        R[i] = DecToBin32(8 * i)
-def Mexam(i):
-    return DecToBin32(16 + i)
-ResetRexam()
-ResetFlags()
-A = '00000400'
-B = '00000800'
-MA = Mexam(Hex8ToDec(A))
-MB = Mexam(Hex8ToDec(B))
-MAplus100 = Mexam(Hex8ToDec(A) + Hex8ToDec('00000100'))
-R[1] = MOV32(R[1], MAplus100)
-PrintReg('R1', R[1])
-R[1] = XOR32(R[1], Hex8ToBin32('00000010'))
-PrintReg('R1', R[1])
-R[1] = SUB32(R[1], MB)
-PrintReg('R1', R[1])
-MA = MOV32(MA, Hex8ToBin32('00000010'))
-
-ResetFlags()
-R[1] = MOV32(R[1], DecToBin32(1))
-PrintReg('R1', R[1])
-R[2] = MOV32(R[2], DecToBin32(3))
-PrintReg('R2', R[2])
-R[1] = SAR32(R[1], Bin32ToDec(R[2]))
-PrintReg('R1', R[1])
-if not JE32():
-    R[1] = MOV32(R[1], Hex8ToBin32('FFFFFFFF'))
-    PrintReg('R1', R[1])
+    ResetFlags()
+    PrintM()
+    CAT1Q1()
     
-print()
-print("exam")
-ResetFlags()
-R0 = '00000400'
-R1 = '00000300'
-R2 = '00000200'
-R3 = '00000100'
-R4 = '00000500'
-M100 = 'FFFF0000'
-M200 = '0000FFFF'
-M300 = '11110000'
-M400 = '00001111'
-M500 = 'F000000F'
-A = M500
+    Q("Q1b")
+    ResetFlags()
+    PrintM()
+    CAT1Q2()
+    
+    Q("Q1c")
+    ResetFlags()
+    CAT1Q3()
 
-print("a")
-R0 = SUB32(Hex8ToBin32(R0), Hex8ToBin32(R1))
-PrintReg('R0', R0)
-R2 = MOV32(R2, Hex8ToBin32(M100))
-PrintReg('R2', R2)
-R2 = XOR32(R2, Hex8ToBin32(A))
-PrintReg('R2', R2)
-print("b")
-R1 = '00000300'
-R2 = '00000200'
-R2 = NEG32(Hex8ToBin32(R2))
-PrintReg('R2', R2)
-R2 = ADD32(R2, Hex8ToBin32(M300))
-PrintReg('R2', R2)
-R1 = MOV32(R1, Hex8ToBin32(A))
-PrintReg('R1', R1)
+CAT1()
 
-Print32(DecToBin32(Hex8ToDec('00000DDE')+3))
-Print32(DecToBin32(-19))
+'''x = Bin32ToHex8(ADD32(Hex8ToBin32('00AABBCC'), DecToBin32(7)))
+print(x)
+print(Bin32ToHex8(DecToBin32(-21)))
+'''
+
